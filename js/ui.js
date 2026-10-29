@@ -1,0 +1,128 @@
+var $ = function (id) { return document.getElementById(id); };
+var SCREENS = ['splash', 'menu', 'shop', 'hud'];
+
+var UI = {
+  v3: null, dn: 0,
+  screen: function (n) {
+    SCREENS.forEach(function (s) {
+      var e = $(s), was = e.classList.contains('on');
+      e.classList.toggle('on', s === n);
+      if (s === 'menu' && s === n && !was) { e.classList.remove('enter'); void e.offsetWidth; e.classList.add('enter'); }
+    });
+  },
+  modal: function (n, on) { $(n).classList.toggle('on', !!on); },
+  fade: function (on, ms) {
+    var f = $('fade');
+    if (!f) { f = document.createElement('div'); f.id = 'fade'; document.body.appendChild(f); }
+    f.style.transitionDuration = (ms || 500) + 'ms'; f.style.opacity = on ? 1 : 0;
+  },
+  closeModals: function () { ['settings', 'pause', 'over', 'levelup'].forEach(function (m) { UI.modal(m, false); }); },
+  banner: function (txt) {
+    var b = $('banner'); b.innerHTML = txt.replace(' · ', '<small>') + (txt.indexOf(' · ') >= 0 ? '</small>' : '');
+    b.classList.remove('go'); void b.offsetWidth; b.classList.add('go');
+  },
+  flash: function () { var h = $('hurt'); h.classList.remove('go'); void h.offsetWidth; h.classList.add('go'); },
+  dmg: function (x, y, z, txt, crit, color) {
+    if (this.dn > 40) return;
+    if (!this.v3) this.v3 = new THREE.Vector3();
+    this.v3.set(x, y, z).project(World.cam);
+    var d = document.createElement('div');
+    d.className = 'dn' + (crit ? ' crit' : '');
+    d.textContent = txt; if (color) d.style.color = color;
+    d.style.left = ((this.v3.x * 0.5 + 0.5) * innerWidth) + 'px';
+    d.style.top = ((-this.v3.y * 0.5 + 0.5) * innerHeight) + 'px';
+    $('dmgs').appendChild(d); this.dn++;
+    setTimeout(function () { d.remove(); UI.dn--; }, 800);
+  },
+  hud: function () {
+    var p = G.p;
+    $('hpFill').style.width = (p.hp / S.maxHp * 100) + '%';
+    $('hpTxt').textContent = Math.ceil(p.hp) + ' / ' + S.maxHp;
+    $('waveTxt').textContent = 'Волна ' + G.wave;
+    $('waveFill').style.width = Math.min(100, G.killedW / Math.max(1, G.total) * 100) + '%';
+    $('waveCnt').textContent = Math.min(G.killedW, G.total) + ' / ' + G.total;
+    var m = Math.floor(G.time / 60), s = Math.floor(G.time % 60);
+    $('timeTxt').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    $('coinTxt').textContent = G.coins;
+    $('killTxt').textContent = G.kills;
+    var b = G.boss; $('boss').classList.toggle('on', !!b);
+    if (b) $('bossFill').style.width = Math.max(0, b.hp / b.max * 100) + '%';
+  },
+  gameOver: function () {
+    G.state = 'over'; Snd.duck(true); Snd.sfx('lose');
+    var earned = G.coins; Flow.bank(true);
+    if (window.Online) Online.submitRun();
+    var m = Math.floor(G.time / 60), s = Math.floor(G.time % 60);
+    $('overStats').innerHTML = '<div>Волна <b>' + G.wave + '</b></div><div>Убито <b>' + G.kills +
+      '</b></div><div>Время <b>' + m + ':' + (s < 10 ? '0' : '') + s + '</b></div><div class="gold">Монет <b>+' + earned + '</b></div>';
+    UI.modal('over', true);
+  },
+  buffList: function () {
+    var h = '', c = {};
+    G.applied.forEach(function (a) { var k = a[0] + ':' + a[1]; c[k] = c[k] || { id: a[0], r: a[1], n: 0 }; c[k].n++; });
+    Object.keys(c).forEach(function (k) {
+      var o = c[k], b = buffById(o.id), r = RARITY[o.r];
+      h += '<span style="border-color:' + r.c + ';color:' + r.c + '" title="' + r.n + '">' + b.ic + ' ' + b.n + (o.n > 1 ? ' ×' + o.n : '') + '</span>';
+    });
+    $('pBuffs').innerHTML = h || '<em>Пока нет улучшений</em>';
+  },
+  pause: function (on) {
+    if (on && G.state === 'play') { G.state = 'pause'; UI.syncVol(); UI.buffList(); UI.modal('pause', true); Snd.duck(true); }
+    else if (!on && G.state === 'pause') { G.state = 'play'; UI.modal('pause', false); Snd.duck(false); }
+  },
+  rng: function (i) {
+    i.style.setProperty('--p', i.value + '%');
+    var o = document.querySelector('output[data-o="' + i.dataset.v + '"]'); if (o) o.textContent = i.value + '%';
+  },
+  syncVol: function () {
+    document.querySelectorAll('input[data-v]').forEach(function (i) { i.value = Math.round(Snd[i.dataset.v] * 100); UI.rng(i); });
+  }
+};
+
+var Flow = {
+  bank: function (dead) {
+    if (G.banked) return; G.banked = true;
+    var st = Save.d.stats;
+    Save.d.coins += G.coins; st.earned += G.coins; st.kills += G.kills; st.time += G.time; st.runs++;
+    if (dead) st.deaths++;
+    st.best = Math.max(st.best, G.wave); Save.d.run = null; Save.save();
+  },
+  curWeapon: function () { return WP(Save.d.eq[Save.d.cls]); },
+  menu: function () {
+    clearGame(); G.state = 'menu'; UI.closeModals(); UI.screen('menu');
+    Menu.setHero(Save.d.cls, Flow.curWeapon()); Menu.setMode('menu'); Snd.duck(false); Snd.play('menu');
+    var b = Save.d.stats.best;
+    $('bestTxt').textContent = b ? 'Рекорд: волна ' + b : '';
+    $('btnCont').style.display = Save.d.run ? '' : 'none';
+    $('contInfo').textContent = Save.d.run ? 'Волна ' + Save.d.run.wave : '';
+    document.querySelectorAll('#clsSel button').forEach(function (e) { e.classList.toggle('on', e.dataset.c === Save.d.cls); e.classList.toggle('lock', !clsUnlocked(e.dataset.c)); });
+  },
+  shop: function () {
+    if (G.state !== 'menu') return;
+    G.state = 'shopIn'; UI.screen('none'); Snd.play('shop');
+    Shop3D.enter(function () { G.state = 'shop'; UI.screen('shop'); Shop.render(); });
+  },
+  shopBack: function () {
+    if (G.state !== 'shop') return;
+    G.state = 'shopOut'; UI.screen('none');
+    Shop3D.leave(function () {
+      Shop3D.say.on = false; Shop3D.bubble().style.opacity = 0;
+      Flow.menu(); if (Menu.intro) Menu.intro(); UI.fade(false, 900);
+    });
+  },
+  play: function (cont) {
+    if (G.state === 'story') return;
+    if (!cont && !Save.d.introSeen && window.Story && Story.scene) { Flow.story(function () { Flow.begin(false); UI.fade(false, 900); }); return; }
+    Flow.begin(cont);
+  },
+  begin: function (cont) {
+    UI.closeModals(); UI.screen('hud'); Snd.duck(false); startGame(cont && Save.d.run); Snd.play('game', true);
+  },
+  story: function (done) {
+    if (G.state === 'story') return;
+    UI.closeModals(); UI.screen('none');
+    Save.d.introSeen = true; Save.save();
+    Story.play(function () { UI.fade(true, 0); done(); });
+  },
+  quit: function () { if (G.state !== 'over') Save.save(); Flow.menu(); }
+};

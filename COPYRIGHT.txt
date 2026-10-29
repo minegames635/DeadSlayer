@@ -1,0 +1,5 @@
+Dead Slayer
+Copyright (c) 2026 MineGames. All rights reserved.
+
+The game code, graphics, music, the MineGames logo and all other assets may not be copied,
+redistributed, modified or sold without the written permission of MineGames.
