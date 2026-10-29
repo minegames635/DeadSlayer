@@ -37,14 +37,14 @@ var Shop3D = {
     var fl = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshLambertMaterial({ map: wt }));
     fl.rotation.x = -Math.PI / 2; s.add(fl);
     var st = this.stoneTex(); st.repeat.set(4, 1.5);
-    var wm = new THREE.MeshLambertMaterial({ map: st });
+    var wm = this.wallMat = new THREE.MeshLambertMaterial({ map: st });
     var back = new THREE.Mesh(new THREE.PlaneGeometry(14, 6), wm); back.position.set(0, 3, -5); s.add(back);
     var lw = new THREE.Mesh(new THREE.PlaneGeometry(14, 6), wm); lw.rotation.y = Math.PI / 2; lw.position.set(-7, 3, 0); s.add(lw);
     var rw = new THREE.Mesh(new THREE.PlaneGeometry(14, 6), wm); rw.rotation.y = -Math.PI / 2; rw.position.set(7, 3, 0); s.add(rw);
     var ce = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), this.mat(0x1a1014)); ce.rotation.x = Math.PI / 2; ce.position.y = 5.2; s.add(ce);
     for (var i = -3; i <= 3; i++) this.box(0.35, 0.4, 14, 0x3a2416, i * 2, 5.0, 0);
     this.box(14, 0.4, 0.4, 0x3a2416, 0, 4.9, -4.8);
-    this.buildCounter(); this.buildProps(); this.buildKeeper(); this.buildDoors(); this.decorate();
+    this.buildCounter(); this.buildProps(); this.buildKeeper(); this.buildDoors(); this.decorate(); this.enrich();
     GFX.tag(this.scene, true);
     [this.shaft, this.runeRing, this.glowPlate].forEach(function (o) { o.castShadow = false; o.receiveShadow = false; });
     this.shift = { x: 0, y: 0 }; this.zf = 1; this.swap = 0; this.out = null;
@@ -211,6 +211,36 @@ var Shop3D = {
     this.spark = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffd070, size: 0.09, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
     this.spark.frustumCulled = false; s.add(this.spark); this.sparkN = N;
   },
+  enrich: function () {
+    var i, j, cols = [0xaa3344, 0x3366aa, 0x44884a, 0xc9a23a, 0x7a4a9a], s = this.scene;
+    // bookshelf on right wall
+    this.box(0.5, 3.0, 2.6, 0x3a2214, 6.7, 1.5, -2.0);
+    for (j = 0; j < 3; j++) {
+      this.box(0.55, 0.08, 2.6, 0x2a160c, 6.65, 0.5 + j * 1.0, -2.0);
+      for (i = 0; i < 8; i++) this.box(0.3, 0.55 + (i % 3) * 0.1, 0.22, cols[(i + j) % 5], 6.5, 0.8 + j * 1.0, -3.0 + i * 0.28);
+    }
+    // weapon rack on back wall
+    this.box(0.1, 1.6, 0.1, 0x777788, -1.3, 3.6, -4.9); this.box(0.1, 1.6, 0.1, 0x777788, 1.3, 3.6, -4.9);
+    this.box(0.4, 0.4, 0.1, 0x5a3418, 0, 3.5, -4.92);
+    this.box(0.9, 1.1, 0.1, 0x7a1a2a, 0, 3.5, -4.9, 0x1a0004);
+    // candles on counter
+    var self = this;
+    [[-0.3, 0.2], [0, 0.3], [0.3, 0.2]].forEach(function (p, k) {
+      self.box(0.12, 0.3 + k * 0.1, 0.12, 0xeee4cc, 3.0 + p[0], 1.39 + k * 0.05, 0.1 + p[1] * 0.1);
+      var fl = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 5), new THREE.MeshBasicMaterial({ color: 0xffbb44 }));
+      fl.position.set(3.0 + p[0], 1.65 + k * 0.1, 0.1 + p[1] * 0.1); s.add(fl); self.flames.push(fl);
+    });
+    // crates
+    this.box(0.9, 0.9, 0.9, 0x5a3a20, -5.6, 0.45, 2.6); this.box(0.7, 0.7, 0.7, 0x4a2c18, -5.4, 1.25, 2.6);
+    this.box(0.95, 0.12, 0.95, 0x2a160c, -5.6, 0.45, 2.6);
+    // cauldron
+    var cd = new THREE.Group(); cd.position.set(4.6, 0, -1.0); s.add(cd);
+    this.box(0.9, 0.7, 0.9, 0x1a1a20, 0, 0.55, 0, null, cd); this.box(1.05, 0.12, 1.05, 0x2a2a30, 0, 0.92, 0, null, cd);
+    this.box(0.8, 0.04, 0.8, 0x66ff88, 0, 0.9, 0, 0x22cc55, cd);
+    for (i = -1; i <= 1; i += 2) { this.box(0.1, 0.25, 0.1, 0x111111, i * 0.35, 0.12, 0.3, null, cd); this.box(0.1, 0.25, 0.1, 0x111111, i * 0.35, 0.12, -0.3, null, cd); }
+    // herbs hanging from beams
+    for (i = 0; i < 5; i++) { this.box(0.03, 0.5, 0.03, 0x333322, -2.6 + i * 1.3, 4.65, 3.0 + (i % 2)); this.box(0.2, 0.3, 0.2, [0x3a6a2a, 0x8a4a2a, 0x6a2a6a][i % 3], -2.6 + i * 1.3, 4.3, 3.0 + (i % 2)); }
+  },
   setQuality: function (c, on) {
     GFX.light(this.spot, c.smap || 1024, 8);
     if (this.dust) this.dust.geometry.setDrawRange(0, Math.min(50, c.dust));
@@ -218,11 +248,11 @@ var Shop3D = {
     this.scene.fog.near = c.fn - 2; this.scene.fog.far = c.ff;
   },
   layout: function () {
-    var iw = window.innerWidth, ih = window.innerHeight, narrow = iw <= 900 || iw / ih <= 1.1, sx = 0, sy = 0, zf = 1;
+    var iw = window.innerWidth, ih = window.innerHeight, narrow = iw / ih <= 1.1, sx = 0, sy = 0, zf = 1;
     var unitsH = 2 * Math.tan(25 * Math.PI / 180) * 6.3;
     if (narrow) { sy = ih * 0.23; zf = Math.max(1, 5.2 / (unitsH * iw / ih)); }
     else {
-      var pw = Math.min(560, iw * 0.94), left = iw * 0.03 + pw + 16, fw = iw - left;
+      var pw = Math.min(560, iw * 0.5), left = iw * 0.03 + pw + 16, fw = iw - left;
       sx = left + fw / 2 - iw / 2; zf = Math.max(1, 5.0 / (unitsH * fw / ih));
     }
     this.shift = { x: sx, y: sy }; this.zf = Math.min(3, zf);

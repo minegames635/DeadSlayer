@@ -51,6 +51,7 @@ function buildZombie(type, def) {
     z.base = 0.22;
     L.forEach(function (m) { m.transparent = true; m.opacity = 0.62; m.emissive.setRGB(0.22, 0.22 * 0.9, 0.22 * 0.9); });
   }
+  if (window.Season) Season.zombie(z, def, type);
   return z;
 }
 

@@ -32,13 +32,21 @@ var Thumbs = {
 
 var Shop = {
   tab: 'knight', renderer: null, sel: null,
-  tabs: [['knight', '⚔ Рыцарь'], ['mage', '✦ Маг'], ['archer', '➶ Лучник'], ['up', '▲ Прокачка']],
+  tabs: [['knight', '⚔ Рыцарь'], ['mage', '✦ Маг'], ['archer', '➶ Лучник'], ['abil', '✺ Умения'], ['up', '▲ Прокачка']],
   col: function (n) { return '#' + ('000000' + n.toString(16)).slice(-6); },
   render: function () {
     var d = Save.d, h = '', self = this;
     $('shopCoins').textContent = d.coins;
     $('shopTabs').innerHTML = this.tabs.map(function (t) { return '<button data-tab="' + t[0] + '"' + (t[0] === self.tab ? ' class="act"' : '') + '>' + t[1] + '</button>'; }).join('');
-    if (this.tab !== 'up') {
+    if (this.tab === 'abil') {
+      ['knight', 'mage', 'archer'].forEach(function (c) {
+        var a = ABIL[c], l = abilLevel(c), max = l >= a.max, cost = abilCost(c, l), pips = '';
+        for (var i = 0; i < a.max; i++) pips += '<b class="' + (i < l ? 'f' : '') + '"></b>';
+        h += '<div class="item" style="--c:#ffc933"><div class="sic">' + a.ic + '</div><div class="inf"><h4>' + a.n + ' <small>' + CLASSES[c].n + ' · ур. ' + l + '</small></h4><p>' + a.t +
+          '. Перезарядка ' + (a.cd * Math.pow(0.92, Math.max(0, l - 1))).toFixed(1) + ' с. ПКМ / E на ПК, кнопка на телефоне.</p><div class="pips">' + pips + '</div></div>' +
+          (max ? '<button disabled>МАКС</button>' : '<button data-a="abil" data-id="' + c + '"' + (d.coins < cost ? ' class="no"' : '') + '>' + (l ? 'Улучшить' : 'Купить') + ' · ' + cost + '</button>') + '</div>';
+      });
+    } else if (this.tab !== 'up') {
       var mx = { dmg: 80, spd: 2.6, range: 12.5 };
       WEAPONS.filter(function (w) { return w.cls === self.tab; }).forEach(function (s) {
         var own = d.owned.indexOf(s.id) >= 0, eq = d.eq[s.cls] === s.id;
@@ -71,6 +79,10 @@ var Shop = {
       Shop3D.speak(Shop3D.rnd(Shop3D.BUY)); Snd.sfx('coin');
     } else if (a === 'equip') {
       var w = WP(id); d.eq[w.cls] = id; d.cls = w.cls; Shop3D.speak(Shop3D.rnd(Shop3D.EQ));
+    } else if (a === 'abil') {
+      var ac = abilCost(id, abilLevel(id));
+      if (d.coins < ac || abilLevel(id) >= ABIL[id].max) { Shop3D.speak(Shop3D.rnd(Shop3D.POOR)); return; }
+      d.coins -= ac; d.abil[id] = abilLevel(id) + 1; Shop3D.speak(Shop3D.rnd(Shop3D.BUY)); Snd.sfx('coin');
     } else if (a === 'up') {
       var u = UPG.filter(function (x) { return x.id === id; })[0], c = upCost(u, d.up[id]);
       if (d.coins < c || d.up[id] >= u.max) { Shop3D.speak(Shop3D.rnd(Shop3D.POOR)); return; }

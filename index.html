@@ -102,6 +102,7 @@
   </div>
   <div class="hudC"><div id="waveTxt">Волна 1</div><div class="bar wv"><i id="waveFill"></i></div><div id="waveCnt"></div><div id="timeTxt">0:00</div></div>
   <div class="hudR"><div class="coins">● <span id="coinTxt">0</span></div><div class="kills">☠ <span id="killTxt">0</span></div><button id="btnPause">II</button></div>
+  <div id="abilHud" style="display:none"><span id="abilIc">✺</span><b>ПКМ / E</b><i></i></div>
   <div id="boss"><span>Повелитель мёртвых</span><div class="bar bs"><i id="bossFill"></i></div></div>
   <div id="banner"></div>
 </div>
@@ -115,17 +116,22 @@
     <label class="rng"><span>Звуки</span><input type="range" min="0" max="100" data-v="sv"><output data-o="sv">0%</output></label>
   </div>
   <div id="sp_gfx" class="spane" style="display:none">
+    <label class="sw" id="fsRow"><span>Полный экран</span><input type="checkbox" id="optFs"><i></i></label>
+    <p class="hint" id="fsHint" style="display:none">На iPhone браузер не позволяет полный экран. Нажми «Поделиться» → «На экран Домой», и игра откроется без панелей Safari.</p>
     <div class="lbl">Качество</div>
     <div id="gfxQ" class="tabs"><button data-q="low">Низкое</button><button data-q="med">Среднее</button><button data-q="high">Высокое</button><button data-q="ultra">Ультра</button></div>
     <label class="sw"><span>Тени</span><input type="checkbox" data-g="shadows"><i></i></label>
     <label class="sw"><span>Тряска камеры</span><input type="checkbox" data-g="shake"><i></i></label>
     <label class="sw"><span>Числа урона</span><input type="checkbox" data-g="dmg"><i></i></label>
     <label class="sw"><span>Виньетка</span><input type="checkbox" data-g="vig"><i></i></label>
+    <label class="sw"><span>Сезонное оформление</span><input type="checkbox" data-g="season"><i></i></label>
     <label class="sw"><span>Показывать FPS</span><input type="checkbox" data-g="fps"><i></i></label>
   </div>
   <div id="sp_ctl" class="spane" style="display:none">
     <div class="keys"><div>Движение<b>WASD / стрелки</b></div><div>Пауза<b>Esc / P</b></div><div>Выбор бонуса<b>1 / 2 / 3</b></div><div>Пропуск анимации<b>Пробел</b></div><div>Атака<b>Автоматически</b></div><div>Полный экран<b>F11</b></div></div>
-    <p class="hint">На телефоне: джойстик слева внизу, атака автоматическая, карточки бонусов выбираются касанием.</p>
+    <div class="lbl">Режим атаки</div>
+    <div id="atkSel" class="tabs"><button data-atk="auto">Авто</button><button data-atk="manual">Ручная</button></div>
+    <p class="hint">ПК: в ручном режиме целься мышью, ЛКМ атака, ПКМ или E способность. Телефон: левый стик ходьба, правый стик прицел и атака, кнопка способности рядом.</p>
   </div>
   <div id="sp_stat" class="spane" style="display:none"><div id="statsBox" class="keys"></div></div>
   <div id="sp_acc" class="spane" style="display:none">
@@ -162,14 +168,26 @@
   <div id="cards"></div>
 </div>
 
+<div id="atkModal" class="modal"><div class="box">
+  <h2>Режим атаки</h2>
+  <button id="atkAuto" class="mbtn primary"><span>Авто-атака</span><small>герой сам бьёт ближних врагов</small></button>
+  <button id="atkManual" class="mbtn"><span>Ручная атака</span><small id="atkManualHint">мышь + ЛКМ</small></button>
+  <p class="hint">Режим можно поменять в Настройках → Управление.</p>
+</div></div>
+
 <div id="touch">
+  <div id="zoneL"></div><div id="zoneR"></div>
   <div id="joyBase"><div id="joyKnob"></div></div>
+  <div id="aimBase"><div id="aimKnob"></div></div>
+  <button id="abilBtn" style="display:none" aria-label="Способность"><span id="abilBtnIc">✺</span></button>
   <button id="touchPause" aria-label="Пауза">II</button>
 </div>
 <div id="rotateHint">Поверни телефон горизонтально для лучшего обзора</div>
 
 <script src="three.min.js"></script>
 <script src="js/data.js"></script>
+<script src="js/abilities.js"></script>
+<script src="js/season.js"></script>
 <script src="js/cheat.js"></script>
 <script src="js/buffs.js"></script>
 <script src="js/audio.js"></script>
@@ -181,6 +199,7 @@
 <script src="js/fx.js"></script>
 <script src="js/game.js"></script>
 <script src="js/combat.js"></script>
+<script src="js/input.js"></script>
 <script src="js/enemies.js"></script>
 <script src="js/levelup.js"></script>
 <script src="js/ui.js"></script>

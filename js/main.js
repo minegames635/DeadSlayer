@@ -1,9 +1,46 @@
 var renderer, clock = { last: 0, t: 0 }, fpsA = { n: 0, t: 0 };
 
 function resize() {
-  var w = innerWidth, h = innerHeight;
+  var vv = window.visualViewport, w = Math.round(innerWidth), h = Math.round(innerHeight);
+  if (vv && vv.scale === 1 && vv.height > 0) { h = Math.round(vv.height); w = Math.round(vv.width); }
+  document.documentElement.style.setProperty('--vh', h * 0.01 + 'px');
   renderer.setSize(w, h); World.resize(w / h); Menu.resize(w / h); Shop3D.view(w / h); Story.view(w / h);
 }
+
+var Fs = (function () {
+  var de = document.documentElement;
+  var req = de.requestFullscreen || de.webkitRequestFullscreen;
+  var KEY = 'deadslayer_fs_v1';
+  function cur() { return document.fullscreenElement || document.webkitFullscreenElement; }
+  function pref() { try { return localStorage.getItem(KEY) !== '0'; } catch (e) { return true; } }
+  function setPref(v) { try { localStorage.setItem(KEY, v ? '1' : '0'); } catch (e) {} }
+  function sync() { var c = $('optFs'); if (c) c.checked = !!cur(); }
+  function on() {
+    if (!req || cur()) return;
+    try { var p = req.call(de); if (p && p.catch) p.catch(function () { sync(); }); } catch (e) {}
+  }
+  function off() {
+    var x = document.exitFullscreen || document.webkitExitFullscreen;
+    if (x && cur()) { try { var p = x.call(document); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+  }
+  function init() {
+    var c = $('optFs'); if (!c) return;
+    if (!req) {
+      c.disabled = true; c.checked = false; $('fsRow').style.opacity = .55;
+      if (/iPhone|iPod/.test(navigator.userAgent)) $('fsHint').style.display = '';
+      return;
+    }
+    c.onchange = function () { setPref(c.checked); if (c.checked) on(); else off(); };
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (t) {
+      document.addEventListener(t, function () {
+        if (!cur()) setPref(false);
+        sync(); setTimeout(resize, 120);
+      });
+    });
+    sync();
+  }
+  return { init: init, on: on, pref: pref, sync: sync };
+}());
 
 function frame(now) {
   requestAnimationFrame(frame);
@@ -21,6 +58,7 @@ function frame(now) {
     FX.update(st === 'play' ? dt : 0);
     renderer.render(World.scene, World.cam);
   }
+  if (window.Season) Season.update(dt, st, G.p && G.p.x, G.p && G.p.z);
   TouchCtl.tick();
   fpsA.n++; fpsA.t += dt;
   if (fpsA.t >= 0.5) { if (Save.d.gfx.fps) $('fps').textContent = Math.round(fpsA.n / fpsA.t) + ' FPS'; fpsA.n = 0; fpsA.t = 0; }
@@ -32,6 +70,7 @@ function renderSettings() {
   var g = Save.d.gfx, st = Save.d.stats;
   document.querySelectorAll('#gfxQ button').forEach(function (b) { b.classList.toggle('act', b.dataset.q === g.q); });
   document.querySelectorAll('input[data-g]').forEach(function (i) { i.checked = !!g[i.dataset.g]; });
+  document.querySelectorAll('#atkSel button').forEach(function (b) { b.classList.toggle('act', b.dataset.atk === Save.d.atk); });
   $('statsBox').innerHTML = [['Забегов', st.runs], ['Смертей', st.deaths], ['Убито зомби', st.kills], ['Лучшая волна', st.best],
     ['Боссов', st.bosses], ['Заработано монет', st.earned], ['Время в игре', fmtTime(st.time)]].map(function (r) { return '<div>' + r[0] + '<b>' + r[1] + '</b></div>'; }).join('');
 }
@@ -47,14 +86,25 @@ function boot() {
   Snd.mv = Save.d.mv; Snd.sv = Save.d.sv;
   GFX.apply();
   G.state = 'splash'; UI.screen('none');
-  TouchCtl.init();
+  Input.init(); TouchCtl.init();
+  if (window.Season) Season.init();
   if (window.Intro) Intro.start(function () { UI.screen('splash'); }); else UI.screen('splash');
   addEventListener('resize', resize);
+  addEventListener('orientationchange', function () { setTimeout(resize, 150); setTimeout(resize, 500); });
+  if (window.visualViewport) visualViewport.addEventListener('resize', resize);
+  Fs.init(); resize();
 
   $('splash').addEventListener('click', function () { Snd.init(); Snd.resume(); Flow.menu(); Menu.intro(); });
   document.addEventListener('click', function (e) { if (e.target.closest('button')) { Snd.resume(); Snd.sfx('click'); } });
 
-  $('btnPlay').onclick = function () { Flow.play(false); };
+  function askAtk(next) {
+    $('atkManualHint').textContent = TouchCtl.isTouch ? 'второй стик справа' : 'мышь + ЛКМ';
+    function pick(m) { Save.d.atk = m; Save.save(); UI.modal('atkModal', false); next(); }
+    $('atkAuto').onclick = function () { pick('auto'); };
+    $('atkManual').onclick = function () { pick('manual'); };
+    UI.modal('atkModal', true);
+  }
+  $('btnPlay').onclick = function () { askAtk(function () { Flow.play(false); }); };
   $('btnCont').onclick = function () { Flow.play(true); };
   $('btnShop').onclick = function () { Flow.shop(); };
   $('btnSet').onclick = openSettings;
@@ -67,7 +117,10 @@ function boot() {
   $('resume').onclick = function () { UI.pause(false); };
   $('pSet').onclick = openSettings;
   $('pQuit').onclick = Flow.quit;
-  $('retry').onclick = function () { Flow.play(false); };
+  $('retry').onclick = function () { askAtk(function () { Flow.play(false); }); };
+  document.querySelectorAll('#atkSel button').forEach(function (b) {
+    b.onclick = function () { Save.d.atk = b.dataset.atk; Save.save(); renderSettings(); };
+  });
   $('overMenu').onclick = Flow.quit;
   $('cine').onclick = function () { LevelUp.skip(); };
   $('cards').addEventListener('click', function (e) {
@@ -89,7 +142,7 @@ function boot() {
     b.onclick = function () { Save.d.gfx.q = b.dataset.q; GFX.apply(); renderSettings(); Save.save(); };
   });
   document.querySelectorAll('input[data-g]').forEach(function (i) {
-    i.onchange = function () { Save.d.gfx[i.dataset.g] = i.checked; GFX.apply(); Save.save(); };
+    i.onchange = function () { Save.d.gfx[i.dataset.g] = i.checked; GFX.apply(); Save.save(); if (window.Season) Season.refresh(true); };
   });
   document.querySelectorAll('input[data-v]').forEach(function (i) {
     i.addEventListener('input', function () { Snd[i.dataset.v] = i.value / 100; Save.d[i.dataset.v] = i.value / 100; UI.rng(i); });
@@ -105,6 +158,7 @@ function boot() {
       return;
     }
     G.keys[e.code] = true;
+    if (e.code === 'KeyE' && window.Abil) Abil.cast();
     if (e.code === 'Escape' || e.code === 'KeyP') {
       var openTop = ['accountModal', 'leaderboardModal', 'settings'].filter(function (m) { return $(m).classList.contains('on'); })[0];
       if (openTop === 'accountModal' && window.Online && Online.isGate()) { /* login is mandatory */ }

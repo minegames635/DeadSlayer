@@ -5,8 +5,8 @@ var Save = {
     return {
       coins: 0, owned: ['rusty'], cls: 'knight', eq: { knight: 'rusty', mage: 'twig', archer: 'short' }, up: up,
       stats: { kills: 0, runs: 0, time: 0, best: 0, bosses: 0, earned: 0, deaths: 0 },
-      gfx: { q: 'high', shadows: true, shake: true, dmg: true, vig: true, fps: false },
-      mv: 0.6, sv: 0.7, run: null, introSeen: false
+      gfx: { q: 'high', shadows: true, shake: true, dmg: true, vig: true, fps: false, season: true },
+      mv: 0.6, sv: 0.7, run: null, introSeen: false, atk: 'auto', abil: { knight: 0, mage: 0, archer: 0 }
     };
   },
   uid: null, key: null, timer: null, pushFn: null, cloudSafe: true,
@@ -26,6 +26,7 @@ var Save = {
     if (v.gfx) for (var k in v.gfx) this.d.gfx[k] = v.gfx[k];
     if (typeof v.mv === 'number') this.d.mv = v.mv;
     if (typeof v.sv === 'number') this.d.sv = v.sv;
+    if (v.atk === 'auto' || v.atk === 'manual') this.d.atk = v.atk;
   },
   /* Guest state: blank progress, nothing is written to disk. Real progress lives in attach()ed accounts. */
   load: function () { this.uid = null; this.key = null; this.d = this.def(); this.applyDevice(); },
@@ -45,7 +46,7 @@ var Save = {
     this.uid = null; this.key = null; this.d = this.def(); this.applyDevice();
   },
   writeLocal: function () {
-    try { localStorage.setItem(this.DEVKEY, JSON.stringify({ gfx: this.d.gfx, mv: this.d.mv, sv: this.d.sv })); } catch (e) {}
+    try { localStorage.setItem(this.DEVKEY, JSON.stringify({ gfx: this.d.gfx, mv: this.d.mv, sv: this.d.sv, atk: this.d.atk })); } catch (e) {}
     if (!this.uid) return;
     this.d.savedAt = Date.now();
     try { localStorage.setItem(this.key, JSON.stringify(this.d)); } catch (e) {}

@@ -48,7 +48,7 @@ var World = {
     this.scene.fog.near = c.fn; this.scene.fog.far = c.ff;
   },
   mood: function (w) {
-    var k = Math.min(1, (w - 1) / 14), c = new THREE.Color(0x0b0812).lerp(new THREE.Color(0x200810), k);
+    var k = Math.min(1, (w - 1) / 14), c = new THREE.Color(this.mA || 0x0b0812).lerp(new THREE.Color(this.mB || 0x200810), k);
     this.scene.background.copy(c); this.scene.fog.color.copy(c);
   },
   resize: function (a) {

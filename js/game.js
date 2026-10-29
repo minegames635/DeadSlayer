@@ -1,4 +1,4 @@
-var G = { state: 'menu', wave: 1, phase: 'intro', phaseT: 0, total: 1, spawned: 0, killedW: 0, time: 0, kills: 0, coins: 0, p: null, enemies: [], shots: [], projs: [], minions: [], picks: [], keys: {}, spawnT: 1, boss: null, hero: null, blades: null, bladeN: 0, bladeA: 0, banked: true, t: 0, ts: 1, applied: [], bankedCoins: 0 };
+var G = { state: 'menu', wave: 1, phase: 'intro', phaseT: 0, total: 1, spawned: 0, killedW: 0, time: 0, kills: 0, coins: 0, p: null, enemies: [], shots: [], projs: [], minions: [], picks: [], keys: {}, spawnT: 1, boss: null, hero: null, blades: null, bladeN: 0, bladeA: 0, banked: true, t: 0, ts: 1, applied: [], bankedCoins: 0, aim: { ang: 0, fire: false, on: false, stick: false } };
 var S = {};
 
 function derive() {
@@ -57,6 +57,8 @@ function startGame(cont) {
   if (run) G.revives = run.rev;
   G.p = { x: 0, z: 0, hp: run ? Math.min(S.maxHp, run.hp) : S.maxHp, face: 0, swing: -1, ang: 0, hit: false, atkT: 0.3, hurtT: 0, moving: false };
   G.hero = buildHero(S.cls, S.w); G.hero.g.scale.setScalar(1.25); World.scene.add(G.hero.g);
+  if (window.Abil) Abil.reset();
+  if (window.Season) Season.dress(G.hero, 'hero');
   G.minionTypes.forEach(function (t) { addMinion(t); });
   G.state = 'play'; Save.d.stats.runs += run ? 0 : 1;
   beginWave(run ? run.wave : 1);
@@ -136,10 +138,12 @@ function updateGame(dt, t) {
   var l = Math.sqrt(ix * ix + iz * iz); p.moving = l > 0;
   if (l > 0) { p.x += ix / l * S.spd * fz * dt; p.z += iz / l * S.spd * fz * dt; p.mang = Math.atan2(ix, iz); }
   p.hurtT -= dt; p.hp = Math.min(S.maxHp, p.hp + S.regen * dt); p.atkT -= dt;
+  var man = Save.d.atk === 'manual', A = G.aim;
+  if (window.Input) Input.tick();
   if (p.swing < 0 && p.atkT <= 0 && G.phase !== 'clear') {
-    var tg = nearest(p.x, p.z, S.cls === 'knight' ? S.range + 1.5 : S.range);
+    var tg = man ? (A.fire ? p : null) : nearest(p.x, p.z, S.cls === 'knight' ? S.range + 1.5 : S.range);
     if (tg) {
-      p.ang = Math.atan2(tg.x - p.x, tg.z - p.z); p.swing = 0; p.hit = false; p.atkT = S.cd / fz;
+      p.ang = man ? A.ang : Math.atan2(tg.x - p.x, tg.z - p.z); p.swing = 0; p.hit = false; p.atkT = S.cd / fz;
       if (S.cls === 'knight') { Snd.sfx('swing'); FX.slash(p.x, p.z, p.ang, S.range, S.arc, S.w.glow || S.w.color); }
     }
   }
@@ -148,13 +152,14 @@ function updateGame(dt, t) {
     if (!p.hit && p.swing >= 0.5) { p.hit = true; var rp = Math.max(1, Math.min(100, Math.floor(dt / S.cd))); for (var q = 0; q < rp; q++) { if (S.cls === 'knight') applySwing(); else fireVolley(); } }
     if (p.swing >= 1) p.swing = -1;
   }
-  var tf = p.swing >= 0 ? p.ang : (p.moving ? p.mang : p.face);
+  var tf = p.swing >= 0 ? p.ang : (man && A.on ? A.ang : (p.moving ? p.mang : p.face));
   p.face += angDiff(tf, p.face) * Math.min(1, dt * (p.swing >= 0 ? 25 : 12));
   G.hero.g.position.set(p.x, 0, p.z); G.hero.g.rotation.y = p.face;
   animateHero(G.hero, t, p.moving, p.swing);
   updateWaveFlow(dt);
   updateEnemies(dt, t); updateShots(dt); updatePicks(dt, t); updateBlades(dt);
   updateProjs(dt); updateMinions(dt, t); updatePassives(dt);
+  if (window.Abil) Abil.update(dt);
   if (G.state === 'play') UI.hud();
 }
 

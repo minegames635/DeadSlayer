@@ -133,7 +133,11 @@ var Story = {
     this.el.top = m('div', null, 'stBar top', r); this.el.bot = m('div', null, 'stBar bot', r);
     this.el.sub = m('div', 'stSub', null, r); this.el.fade = m('div', 'stFade', null, r); this.el.flash = m('div', 'stFlash', null, r);
     this.el.title = m('div', 'stTitle', null, r); this.el.title.innerHTML = '<b>DEAD SLAYER</b><span>Выживи. Отомсти. Уничтожь.</span>';
-    this.el.hint = m('div', 'stHint', null, r); this.el.hint.textContent = 'Enter — пропустить';
+    var touch = window.TouchCtl && TouchCtl.isTouch, self = this;
+    this.el.hint = m('button', 'stHint', null, r); this.el.hint.type = 'button';
+    this.el.hint.textContent = touch ? 'Пропустить ▶▶' : 'Enter — пропустить';
+    this.el.hint.addEventListener('click', function (e) { e.stopPropagation(); self.skip(); });
+    r.addEventListener('pointerdown', function () { if (self.on) self.hintT = Math.max(self.hintT, 1.6); });
   },
   warm: function () {
     var self = this, r = window.renderer; if (!r || !r.compile) return;

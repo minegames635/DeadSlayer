@@ -79,6 +79,7 @@ var Menu = {
   setHero: function (cls, def) {
     if (this.hero) this.stage.remove(this.hero.g);
     this.hero = buildHero(cls, def); this.hero.g.scale.setScalar(1.7); this.stage.add(this.hero.g); this.pop = 0.4;
+    if (window.Season) Season.dress(this.hero, 'hero', cls);
   },
   extras: function (s) {
     var cm = new THREE.MeshBasicMaterial({ color: 0x0d0818 }), c = new THREE.Group(), wm = new THREE.MeshBasicMaterial({ color: 0xffc66a });

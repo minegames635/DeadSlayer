@@ -8,7 +8,7 @@ var Snd = {
       this.tr[k] = { a: a, v: 0, r: 0.12 };
     }
     this.PL.forEach(function (src, i) {
-      var a = new Audio(src); a.loop = false; a.preload = 'auto'; a.volume = 0;
+      var a = new Audio(src); a.loop = s0.PL.length === 1; a.preload = 'auto'; a.volume = 0;
       a.addEventListener('ended', function () { if (s0.cur === 'g' + i) s0.next(); });
       s0.tr['g' + i] = { a: a, v: 0, r: 0.02 };
     });
@@ -16,7 +16,7 @@ var Snd = {
     var s = this; setInterval(function () { s.fade(); }, 40);
   },
   resume: function () { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume(); },
-  PL: ['ost1.mp3', 'ost2.mp3'], gi: 0, xf: 5,
+  PL: ['ost2.mp3'], gi: 0, xf: 5,
   isG: function (k) { return typeof k === 'string' && /^g\d+$/.test(k); },
   play: function (k, restart) {
     if (k === 'game') {
@@ -34,7 +34,7 @@ var Snd = {
   },
   duck: function (on) { this.duckF = on; },
   fade: function () {
-    if (this.isG(this.cur)) {
+    if (this.isG(this.cur) && this.PL.length > 1) {
       var ca = this.tr[this.cur].a;
       if (ca.duration && isFinite(ca.duration) && ca.duration - ca.currentTime < Math.min(this.xf, ca.duration * 0.2)) this.next();
     }

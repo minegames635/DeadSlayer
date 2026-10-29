@@ -14,16 +14,16 @@ function fireProj(x, z, ang, dmg, speed, range, pierce, aoe, color, noHome, targ
 
 function fireVolley() {
   var p = G.p, w = S.w, n = 1 + S.multi + Cheat.v.multi, sp = w.ps * S.psM, i;
-  var tg0 = nearest(p.x, p.z, S.range); if (!tg0) return;
+  var man = Save.d.atk === 'manual', tg0 = man ? null : nearest(p.x, p.z, S.range); if (!man && !tg0) return;
   if (S.cls === 'mage') {
     Snd.sfx('magic'); var used = [];
     for (i = 0; i < n; i++) {
-      var t = i === 0 ? tg0 : (nearest(p.x, p.z, S.range, used) || tg0); used.push(t);
-      var a = Math.atan2(t.x - p.x, t.z - p.z) + (i && t === tg0 ? (i % 2 ? 0.3 : -0.3) : 0);
+      var t = man ? null : (i === 0 ? tg0 : (nearest(p.x, p.z, S.range, used) || tg0)); used.push(t);
+      var a = man ? p.ang + (i - (n - 1) / 2) * 0.22 : Math.atan2(t.x - p.x, t.z - p.z) + (i && t === tg0 ? (i % 2 ? 0.3 : -0.3) : 0);
       fireProj(p.x + Math.sin(a) * 0.8, p.z + Math.cos(a) * 0.8, a, S.dmg, sp, S.range * 1.3, 0, w.aoe * S.aoeM, w.color, false, t);
     }
   } else {
-    Snd.sfx('bow'); var a0 = Math.atan2(tg0.x - p.x, tg0.z - p.z);
+    Snd.sfx('bow'); var a0 = man ? p.ang : Math.atan2(tg0.x - p.x, tg0.z - p.z);
     for (i = 0; i < n; i++) {
       var a = a0 + (i - (n - 1) / 2) * 0.18;
       fireProj(p.x + Math.sin(a) * 0.8, p.z + Math.cos(a) * 0.8, a, S.dmg, sp, S.range * 1.15, (w.pierce || 1) + S.pierce, 0, w.color);
