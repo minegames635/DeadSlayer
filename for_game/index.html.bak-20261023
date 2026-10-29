@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dead Slayer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="vig"></div>
+<div id="hurt"></div>
+<div id="dmgs"></div>
+<div id="fps"></div>
+
+<div id="splash" class="screen"><div class="center"><h1 class="logo">DEAD SLAYER</h1><p class="blink">Нажми, чтобы начать</p></div></div>
+
+<div id="menu" class="screen">
+  <div class="menuCol">
+    <h1 class="logo">DEAD<br>SLAYER</h1>
+    <p class="sub">Рогалик на выживание</p>
+    <button id="btnCont" class="big cont">Продолжить <small id="contInfo"></small></button>
+    <button id="btnPlay" class="big">Новая игра</button>
+    <button id="btnShop" class="big alt">Магазин</button>
+    <button id="btnSet" class="big alt">Настройки</button>
+    <div id="clsSel">
+      <button data-c="knight">⚔ Рыцарь</button><button data-c="mage">✦ Маг</button><button data-c="archer">➳ Лучник</button>
+    </div>
+    <p id="bestTxt" class="best"></p>
+  </div>
+</div>
+
+<div id="shop" class="screen">
+  <div class="shopPanel">
+    <div class="shopTop"><button id="shopBack">← Назад</button><h2>Магазин</h2><div class="coins">● <span id="shopCoins">0</span></div></div>
+    <div id="shopTabs" class="tabs"></div>
+    <div id="shopBody"></div>
+  </div>
+</div>
+
+<div id="hud" class="screen">
+  <div class="hudL">
+    <div class="bar hp"><i id="hpFill"></i><span id="hpTxt"></span></div>
+  </div>
+  <div class="hudC"><div id="waveTxt">Волна 1</div><div class="bar wv"><i id="waveFill"></i></div><div id="waveCnt"></div><div id="timeTxt">0:00</div></div>
+  <div class="hudR"><div class="coins">● <span id="coinTxt">0</span></div><div class="kills">☠ <span id="killTxt">0</span></div><button id="btnPause">II</button></div>
+  <div id="boss"><span>Повелитель мёртвых</span><div class="bar bs"><i id="bossFill"></i></div></div>
+  <div id="banner"></div>
+</div>
+
+<div id="settings" class="modal"><div class="box wide">
+  <h2>Настройки</h2>
+  <div id="setTabs" class="tabs"><button data-t="snd" class="act">Звук</button><button data-t="gfx">Графика</button><button data-t="ctl">Управление</button><button data-t="stat">Статистика</button></div>
+  <div id="sp_snd" class="spane">
+    <label>Музыка <input type="range" min="0" max="100" data-v="mv"></label>
+    <label>Звуки <input type="range" min="0" max="100" data-v="sv"></label>
+  </div>
+  <div id="sp_gfx" class="spane" style="display:none">
+    <div class="lbl">Качество</div>
+    <div id="gfxQ" class="tabs"><button data-q="low">Низкое</button><button data-q="med">Среднее</button><button data-q="high">Высокое</button><button data-q="ultra">Ультра</button></div>
+    <label class="chk"><input type="checkbox" data-g="shadows"> Тени</label>
+    <label class="chk"><input type="checkbox" data-g="shake"> Тряска камеры</label>
+    <label class="chk"><input type="checkbox" data-g="dmg"> Числа урона</label>
+    <label class="chk"><input type="checkbox" data-g="vig"> Виньетка</label>
+    <label class="chk"><input type="checkbox" data-g="fps"> Показывать FPS</label>
+  </div>
+  <div id="sp_ctl" class="spane" style="display:none">
+    <div class="keys"><div>Движение<b>WASD / стрелки</b></div><div>Пауза<b>Esc / P</b></div><div>Выбор бонуса<b>1 / 2 / 3</b></div><div>Пропуск анимации<b>Пробел</b></div><div>Атака<b>Автоматически</b></div><div>Полный экран<b>F11</b></div></div>
+  </div>
+  <div id="sp_stat" class="spane" style="display:none"><div id="statsBox" class="keys"></div></div>
+  <button id="setBack" class="big">Готово</button>
+</div></div>
+
+<div id="pause" class="modal"><div class="box">
+  <h2>Пауза</h2>
+  <div id="pBuffs"></div>
+  <button id="resume" class="big">Продолжить</button>
+  <button id="pSet" class="big alt">Настройки</button>
+  <button id="pQuit" class="big alt">В главное меню</button>
+  <p class="hint">Прогресс сохраняется при выходе</p>
+</div></div>
+
+<div id="over" class="modal"><div class="box">
+  <h2 class="red">Ты погиб</h2>
+  <div id="overStats"></div>
+  <button id="retry" class="big">Ещё раз</button>
+  <button id="overMenu" class="big alt">В главное меню</button>
+</div></div>
+
+<div id="levelup" class="modal">
+  <canvas id="cine"></canvas>
+  <h2 id="lvTitle"></h2>
+  <div id="lvRes"></div>
+  <div id="lvHint" class="hint"></div>
+  <div id="cards"></div>
+</div>
+
+<script src="three.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/cheat.js"></script>
+<script src="js/buffs.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/weapons.js"></script>
+<script src="js/hero.js"></script>
+<script src="js/zombie.js"></script>
+<script src="js/world.js"></script>
+<script src="js/menu3d.js"></script>
+<script src="js/fx.js"></script>
+<script src="js/game.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/enemies.js"></script>
+<script src="js/levelup.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/shop3d.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
